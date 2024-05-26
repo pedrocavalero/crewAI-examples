@@ -1,4 +1,4 @@
-'''
+"""
 Example script to automatically write a screenplay from a newsgroup post using agents with Crew.ai (https://github.com/joaomdmoura/crewAI)
 You can also try it out with a personal email with many replies back and forth and see it turn into a movie script.
 Demonstrates:
@@ -10,85 +10,102 @@ Additional endpoints requirements:
   pip install langchain-together
 Author: Toon Beerten (toon@neontreebot.be)
 License: MIT
-'''
-import os
+"""
+
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# import os
 import re
 from crewai import Agent, Task, Crew, Process
-from langchain.agents import AgentType, initialize_agent, load_tools
-from langchain.chat_models import openai
-#endpoint specific imports
-import langchain_mistralai
-from langchain_mistralai.chat_models import ChatMistralAI
-from langchain_community.llms import Together
-from langchain_community.chat_models import ChatAnyscale
+
+# from langchain.agents import AgentType, initialize_agent, load_tools
+# from langchain.chat_models import openai
+
+# endpoint specific imports
+# import langchain_mistralai
+# from langchain_mistralai.chat_models import ChatMistralAI
+# from langchain_community.llms import Together
+# from langchain_community.chat_models import ChatAnyscale
 
 
 ## Choose here which API endpoint to use, uncomment only one:
 # Official Mistral: benefit of having access to mistral-medium
 # Together.ai: lots of models to choose from
 # Anyscale: cheapest at the time of writing
-#endpoint = 'mistral_official'
-#endpoint = 'togetherai'
-endpoint = 'mistral_official'
+# endpoint = 'mistral_official'
+# endpoint = 'togetherai'
+endpoint = "mistral_official"
 
-#put you API keys here
-mistral_key = ''
-togetherai_key = ''
-anyscale_key = ''
+# put you API keys here
+mistral_key = ""
+togetherai_key = ""
+anyscale_key = ""
 
-#model choice: i already have good results with mistralai/Mistral-7B-Instruct-v0.2
+# model choice: i already have good results with mistralai/Mistral-7B-Instruct-v0.2
 
-if endpoint == 'mistral_official':
-  mixtral=ChatMistralAI(mistral_api_key=mistral_key, model="mistral-tiny",temperature=0.6)
-elif endpoint == 'togetherai':
-  #i get timeouts using Together() , so i use ChatOpenAI() instead
-  #mixtral = Together(model="mistralai/Mistral-7B-Instruct-v0.2", together_api_key=togetherai_key ) #or mistralai/Mixtral-8x7B-Instruct-v0.1
-  mixtral= openai.ChatOpenAI(base_url="https://api.together.xyz/v1", api_key=togetherai_key, temperature=0.5,  model="mistralai/Mistral-7B-Instruct-v0.2")
-elif endpoint == 'anyscale':
-  mixtral = ChatAnyscale(model='mistralai/Mistral-7B-Instruct-v0.1',  api_key=anyscale_key,  streaming=False)
- 
+# if endpoint == "mistral_official":
+#     mixtral = ChatMistralAI(
+#         mistral_api_key=mistral_key, model="mistral-tiny", temperature=0.6
+#     )
+# elif endpoint == "togetherai":
+#     # i get timeouts using Together() , so i use ChatOpenAI() instead
+#     # mixtral = Together(model="mistralai/Mistral-7B-Instruct-v0.2", together_api_key=togetherai_key ) #or mistralai/Mixtral-8x7B-Instruct-v0.1
+#     mixtral = openai.ChatOpenAI(
+#         base_url="https://api.together.xyz/v1",
+#         api_key=togetherai_key,
+#         temperature=0.5,
+#         model="mistralai/Mistral-7B-Instruct-v0.2",
+#     )
+# elif endpoint == "anyscale":
+#     mixtral = ChatAnyscale(
+#         model="mistralai/Mistral-7B-Instruct-v0.1",
+#         api_key=anyscale_key,
+#         streaming=False,
+#     )
+
 
 ## Define Agents
 spamfilter = Agent(
-  role='spamfilter',
-  goal='''Decide whether a text is spam or not.''',
-  backstory='You are an expert spam filter with years of experience. You DETEST advertisements, newsletters and vulgar language.',
-  llm=mixtral,
-  verbose=True,
-  allow_delegation=False
+    role="spamfilter",
+    goal="""Decide whether a text is spam or not.""",
+    backstory="You are an expert spam filter with years of experience. You DETEST advertisements, newsletters and vulgar language.",
+    # llm=mixtral,
+    verbose=True,
+    allow_delegation=False,
 )
 
 analyst = Agent(
-  role='analyse',
-  goal='''You will distill all arguments from all discussion members. Identify who said what. You can reword what they said as long as the main discussion points remain.''',
-  backstory='You are an expert discussion analyst.',
-  llm=mixtral,
-  verbose=True,
-  allow_delegation=False
+    role="analyse",
+    goal="""You will distill all arguments from all discussion members. Identify who said what. You can reword what they said as long as the main discussion points remain.""",
+    backstory="You are an expert discussion analyst.",
+    # llm=mixtral,
+    verbose=True,
+    allow_delegation=False,
 )
 
 scriptwriter = Agent(
-  role='scriptwriter',
-  goal='Turn a conversation into a movie script. Only write the dialogue parts. Do not start the sentence with an action. Do not specify situational descriptions. Do not write parentheticals.',
-  backstory='''You are an expert on writing natural sounding movie script dialogues. You only focus on the text part and you HATE directional notes.''',
-  llm=mixtral,
-  verbose=True,
-  allow_delegation=False
-
+    role="scriptwriter",
+    goal="Turn a conversation into a movie script. Only write the dialogue parts. Do not start the sentence with an action. Do not specify situational descriptions. Do not write parentheticals.",
+    backstory="""You are an expert on writing natural sounding movie script dialogues. You only focus on the text part and you HATE directional notes.""",
+    # llm=mixtral,
+    verbose=True,
+    allow_delegation=False,
 )
 
 formatter = Agent(
-  role='formatter',
-  goal='''Format the text as asked. Leave out actions from discussion members that happen between brackets, eg (smiling).''',
-  backstory='You are an expert text formatter.',
-  llm=mixtral,
-  verbose=True,
-  allow_delegation=False
+    role="formatter",
+    goal="""Format the text as asked. Leave out actions from discussion members that happen between brackets, eg (smiling).""",
+    backstory="You are an expert text formatter.",
+    # llm=mixtral,
+    verbose=True,
+    allow_delegation=False,
 )
 
 scorer = Agent(
-  role='scorer',
-  goal='''You score a dialogue assessing various aspects of the exchange between the participants using a 1-10 scale, where 1 is the lowest performance and 10 is the highest:
+    role="scorer",
+    goal="""You score a dialogue assessing various aspects of the exchange between the participants using a 1-10 scale, where 1 is the lowest performance and 10 is the highest:
   Scale:
   1-3: Poor - The dialogue has significant issues that prevent effective communication.
   4-6: Average - The dialogue has some good points but also has notable weaknesses.
@@ -105,17 +122,17 @@ scorer = Agent(
   Responsiveness: Do the participants address each other's points adequately?
   Language Use: Is the grammar, vocabulary, and syntax appropriate for the context of the dialogue?
   Emotional Intelligence: Are the participants aware of and sensitive to the emotional tone of the dialogue?
-  ''',
-  backstory='You are an expert at scoring conversations on a scale of 1 to 10.',
-  llm=mixtral,
-  verbose=True,
-  allow_delegation=False
+  """,
+    backstory="You are an expert at scoring conversations on a scale of 1 to 10.",
+    # llm=mixtral,
+    verbose=True,
+    allow_delegation=False,
 )
 
 
-#this is one example of a public post in the newsgroup alt.atheism
-#try it out yourself by replacing this with your own email thread or text or ...
-discussion = '''From: keith@cco.caltech.edu (Keith Allan Schneider)
+# this is one example of a public post in the newsgroup alt.atheism
+# try it out yourself by replacing this with your own email thread or text or ...
+discussion = """From: keith@cco.caltech.edu (Keith Allan Schneider)
 Subject: Re: <Political Atheists?
 Organization: California Institute of Technology, Pasadena
 Lines: 50
@@ -171,19 +188,34 @@ by your logic, administer as minimum as punishment as possible, to avoid
 violating the liberty or happiness of an innocent person?
 
 keith
-'''
+"""
 
 # Filter out spam and vulgar posts
-task0 = Task(description='Read the following newsgroup post. If this contains vulgar language reply with STOP . If this is spam reply with STOP.\n### NEWGROUP POST:\n' + discussion, agent=spamfilter)
+task0 = Task(
+    description="Read the following newsgroup post. If this contains vulgar language reply with STOP . If this is spam reply with STOP.\n### NEWGROUP POST:\n"
+    + discussion,
+    expected_output="If this is spam reply with STOP",
+    agent=spamfilter,
+)
 result = task0.execute()
 if "STOP" in result:
-    #stop here and proceed to next post
-    print('This spam message will be filtered out')
+    # stop here and proceed to next post
+    print("This spam message will be filtered out")
 
 # process post with a crew of agents, ultimately delivering a well formatted dialogue
-task1 = Task(description='Analyse in much detail the following discussion:\n### DISCUSSION:\n' + discussion, agent=analyst)
-task2 = Task(description='Create a dialogue heavy screenplay from the discussion, between two persons. Do NOT write parentheticals. Leave out wrylies. You MUST SKIP directional notes.', agent=scriptwriter)
-task3 = Task(description='''Format the script exactly like this:
+task1 = Task(
+    description="Analyse in much detail the following discussion:\n### DISCUSSION:\n"
+    + discussion,
+    expected_output="A detailed list of the topics discussed and the arguments made by each participant.",
+    agent=analyst,
+)
+task2 = Task(
+    description="Create a dialogue heavy screenplay from the discussion, between two persons. Do NOT write parentheticals. Leave out wrylies. You MUST SKIP directional notes.",
+    expected_output="A screenplay formatted dialogue with minimum of 10 lines for each character.",
+    agent=scriptwriter,
+)
+task3 = Task(
+    description="""Format the script exactly like this:
   ## (person 1):
   (first text line from person 1)
              
@@ -196,22 +228,30 @@ task3 = Task(description='''Format the script exactly like this:
   ## (person 2):
   (second text line from person 2)
   
-  ''', agent=formatter)
+  """,
+    expected_output="The script formatted in the expected format.",
+    agent=formatter,
+)
 crew = Crew(
-  agents=[analyst, scriptwriter,formatter],
-  tasks=[task1, task2, task3],
-  verbose=2, # Crew verbose more will let you know what tasks are being worked on, you can set it to 1 or 2 to different logging levels
-  process=Process.sequential # Sequential process will have tasks executed one after the other and the outcome of the previous one is passed as extra content into this next.
+    agents=[analyst, scriptwriter, formatter],
+    tasks=[task1, task2, task3],
+    verbose=2,  # Crew verbose more will let you know what tasks are being worked on, you can set it to 1 or 2 to different logging levels
+    process=Process.sequential,  # Sequential process will have tasks executed one after the other and the outcome of the previous one is passed as extra content into this next.
 )
 result = crew.kickoff()
 
-#get rid of directions and actions between brackets, eg: (smiling)
-result = re.sub(r'\(.*?\)', '', result)
+# get rid of directions and actions between brackets, eg: (smiling)
+result = re.sub(r"\(.*?\)", "", result)
 
-print('===================== end result from crew ===================================')
+print("===================== end result from crew ===================================")
 print(result)
-print('===================== score ==================================================')
-task4 = Task(description='Read the following dialogue. Then score the script on a scale of 1 to 10. Only give the score as a number, nothing else. Do not give an explanation.\n'+result, agent=scorer)
+print("===================== score ==================================================")
+task4 = Task(
+    description="Read the following dialogue. Then score the script on a scale of 1 to 10. Only give the score as a number, nothing else. Do not give an explanation.\n"
+    + result,
+    expected_output="A score between 1 and 10 and a summary of your reasoning behind it.",
+    agent=scorer,
+)
 score = task4.execute()
-score = score.split('\n')[0]  #sometimes an explanation comes after score, ignore
-print(f'Scoring the dialogue as: {score}/10')
+score = score.split("\n")[0]  # sometimes an explanation comes after score, ignore
+print(f"Scoring the dialogue as: {score}")
